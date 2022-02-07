@@ -5,3 +5,8 @@
 bin/
 build/
 lib/
+*.translation
+
+# Other
+export_presets.cfg
+.mono/
