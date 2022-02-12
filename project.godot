@@ -8,24 +8,28 @@
 
 config_version=4
 
-_global_script_classes=[ {
-"base": "",
-"class": "GitAPI",
-"language": "NativeScript",
-"path": "res://addons/godot-git-plugin/git_api.gdns"
-} ]
-_global_script_class_icons={
-"GitAPI": ""
-}
-
 [application]
 
 config/name="Wombat"
+run/main_scene="res://main.tscn"
 config/icon="res://icon.png"
+
+[display]
+
+window/size/width=800
+window/size/height=500
+window/size/resizable=false
 
 [gdnative]
 
-singletons=[ "res://addons/godot-git-plugin/git_api.gdnlib" ]
+singletons=[  ]
+
+[layer_names]
+
+2d_physics/layer_1="GUI"
+2d_physics/layer_2="Units_all"
+2d_physics/layer_3="Units_p1"
+2d_physics/layer_4="Units_p2"
 
 [physics]
 
@@ -33,4 +37,5 @@ common/enable_pause_aware_picking=true
 
 [rendering]
 
+environment/default_clear_color=Color( 0, 0, 0, 1 )
 environment/default_environment="res://default_env.tres"
