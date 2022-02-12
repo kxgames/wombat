@@ -18,5 +18,4 @@ func _ready():
 
 func _on_SelectionBox_selection_finished():
 	current_selection = $SelectionBox.get_current_selection()
-	print(current_selection)
-	#assert(false) # Also should probably commit changes by now...
+	$ActionBox.update_selection(current_selection)

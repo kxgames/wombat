@@ -39,6 +39,3 @@ shape = SubResource( 2 )
 
 [node name="UnitBodyCollision" type="CollisionShape2D" parent="."]
 shape = SubResource( 1 )
-
-[connection signal="input_event" from="." to="." method="_on_GenericUnit_input_event"]
-[connection signal="mouse_entered" from="." to="." method="_on_GenericUnit_mouse_entered"]

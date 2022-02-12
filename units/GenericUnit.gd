@@ -30,3 +30,10 @@ func select_unit():
 func unselect_unit():
 	is_selected = false
 	$SelectedSprite.hide()
+
+func get_icon_scale():
+	return $IconSprite.scale
+
+func get_icon_texture():
+	return $IconSprite.texture
+

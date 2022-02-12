@@ -23,6 +23,7 @@ func _ready():
 
 func _process(_delta):
 	if Input.is_action_pressed("ui_cancel"):
+		is_selecting = false
 		clear_existing_selection()
 
 func _unhandled_input(event):
