@@ -51,7 +51,6 @@ func start_new_action(_event):
 	for unit in selected_units:
 		var ghost = ghost_scene.instance()
 		ghost.embody(unit)
-		#ghost.group_position = ghost.position - centroid
 		ghost.position = unit.position - centroid
 		add_child(ghost)
 		#ghost_dict[ghost] = ghost.position - centroid
@@ -59,6 +58,8 @@ func start_new_action(_event):
 
 func end_new_action(_event):
 	is_actuating = false
+	for ghost in ghost_list:
+		ghost.guide_host()
 	clear_ghost_list()
 
 func drag_new_action(_event):

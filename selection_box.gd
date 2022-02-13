@@ -44,20 +44,21 @@ func _unhandled_input(event):
 			drag_new_selection(event)
 		is_ctrl_selecting = event.control
 
-func start_new_selection(event):
+func start_new_selection(_event):
 	# Starting a new selection action
 	is_selecting = true
 
 	# Set positions and collision box
-	position = event.position # sets the Area2D's position
-	start_pos = event.position
-	end_pos = event.position
+	#position = event.position # sets the Area2D's position
+	position = get_global_mouse_position()
+	start_pos = position
+	end_pos = position
 	update_collision_box()
 	$SelectionBoxCollision.set_deferred("disabled", false)
 
-func drag_new_selection(event):
+func drag_new_selection(_event):
 	# Continuing a selection action
-	end_pos = event.position
+	end_pos = get_global_mouse_position()
 	update_collision_box()
 	update()
 	#call_deferred("check_for_selections")
