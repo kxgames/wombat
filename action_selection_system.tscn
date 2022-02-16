@@ -11,4 +11,8 @@ script = ExtResource( 1 )
 
 [node name="ActionBox" parent="." instance=ExtResource( 3 )]
 
+[node name="CancelationTimer" type="Timer" parent="."]
+wait_time = 0.25
+one_shot = true
+
 [connection signal="selection_finished" from="SelectionBox" to="." method="_on_SelectionBox_selection_finished"]

@@ -21,11 +21,6 @@ func get_current_selection():
 func _ready():
 	$SelectionBoxCollision.disabled = true
 
-func _process(_delta):
-	if Input.is_action_pressed("ui_cancel"):
-		is_selecting = false
-		clear_existing_selection()
-
 func _unhandled_input(event):
 	# Note: Use _unhandled_input rather than _input to allow (future) GUIS to grab input first
 	if event is InputEventMouseButton:

@@ -1,15 +1,23 @@
 extends KinematicBody2D
 
+var player
 var is_selected = false
 var movement_target : Vector2
 
 export var max_speed = 100
 var velocity :Vector2
 
+func setup(unit_info):
+	player = unit_info['player']
+	position = unit_info['position']
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	movement_target = position
 	$SelectedSprite.hide()
+
+	var player_color = player.player_color
+	$WhiteBackground.self_modulate = player_color
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
