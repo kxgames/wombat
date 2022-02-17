@@ -4,7 +4,8 @@ var player
 var is_selected = false
 var movement_target : Vector2
 
-export var max_speed = 100
+export var unit_speed = 100
+var group_speed = INF
 var velocity :Vector2
 
 func setup(unit_info):
@@ -26,7 +27,7 @@ func _ready():
 
 func _physics_process(_delta):
 	var gap = movement_target - position
-	velocity = gap.normalized() * min(max_speed, gap.length())
+	velocity = gap.normalized() * min(gap.length(), min(group_speed, unit_speed))
 	var _velocity = move_and_slide(velocity)
 
 func _on_GenericUnit_mouse_entered():
@@ -55,5 +56,7 @@ func get_icon_scale():
 func get_icon_texture():
 	return $IconSprite.texture
 
-func set_movement_target(new_target):
+func set_movement_target(new_target, slowest_speed=INF):
 	movement_target = new_target
+	group_speed = slowest_speed
+

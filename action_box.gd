@@ -55,8 +55,17 @@ func start_new_action(_event):
 
 func end_new_action(_event):
 	is_actuating = false
+	# Find the slowest unit speed in the group
+	var slowest_speed = INF
 	for ghost in ghost_list:
-		ghost.guide_host()
+		print("unit speed = ", ghost.get_host_speed())
+		slowest_speed = min(slowest_speed, ghost.get_host_speed())
+
+	print("Slowest speed = ", slowest_speed)
+
+	# Move all the units with the slowest unit
+	for ghost in ghost_list:
+		ghost.guide_host(slowest_speed)
 	clear_ghost_list()
 
 func drag_new_action(_event):
