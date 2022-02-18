@@ -1,14 +1,15 @@
 extends Node
 
 export(PackedScene) var generic_player_scene
-export(PackedScene) var melee_scene
+export(PackedScene) var swordsman_scene
 export(PackedScene) var archer_scene
 export(PackedScene) var cavalry_scene
 onready var unit_scene_lookup = {
-	'melee': melee_scene,
+	'swordsman': swordsman_scene,
 	'archer': archer_scene,
 	'cavalry': cavalry_scene,
 	}
+onready var collision_flag_manager = get_node("/root/CollisionFlagManager")
 
 var players_in_game = {} # {player_id : player}
 var units_in_game = {} # {player_id : [units...]}
@@ -28,7 +29,7 @@ var init_players = {
 var loc_scaling = 150 # to scale the relative locations
 var init_units = {
 	# {"type" : [relative_location, ...] }
-	'melee' : [
+	'swordsman' : [
 		Vector2( 1, -1),
 		Vector2( 1,  0),
 		Vector2( 1,  1),
@@ -48,12 +49,8 @@ var init_units = {
 func _ready():
 	setup_players()
 
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-#func _process(delta):
-#	pass
-
 func setup_players():
+	collision_flag_manager.set_all_player_ids(init_players.keys())
 	for p_id in init_players:
 		# Create a new player
 		var player = generic_player_scene.instance()
@@ -87,3 +84,19 @@ func setup_player_init_units(p_id):
 
 			units_in_game[p_id].append(new_unit)
 			players_in_game[p_id].register_new_unit(new_unit)
+
+func _process(_delta):
+	#print_physics_layer_info()
+	pass
+
+func print_physics_layer_info():
+	print()
+	print("Physics layers for players: ", players_in_game.keys())
+	var all_units = []
+	for units_list in units_in_game.values():
+		all_units += units_list
+	for unit in all_units:
+		print(" ", unit, " (p", unit.player.player_id, ") : ")
+		print("  Layers: ", collision_flag_manager.get_player_layer(unit, players_in_game.keys()))
+		print("  Masks: ", collision_flag_manager.get_player_mask(unit, players_in_game.keys()))
+	assert(false)

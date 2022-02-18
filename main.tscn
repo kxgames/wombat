@@ -2,15 +2,15 @@
 
 [ext_resource path="res://main.gd" type="Script" id=1]
 [ext_resource path="res://GenericPlayer.tscn" type="PackedScene" id=2]
-[ext_resource path="res://units/melee_unit.tscn" type="PackedScene" id=3]
-[ext_resource path="res://units/archer_unit.tscn" type="PackedScene" id=4]
+[ext_resource path="res://units/unit_swordsman.tscn" type="PackedScene" id=3]
+[ext_resource path="res://units/unit_archer.tscn" type="PackedScene" id=4]
 [ext_resource path="res://action_selection_system.tscn" type="PackedScene" id=5]
-[ext_resource path="res://units/cavalry_unit.tscn" type="PackedScene" id=6]
+[ext_resource path="res://units/unit_cavalry.tscn" type="PackedScene" id=6]
 
 [node name="Main" type="Node"]
 script = ExtResource( 1 )
 generic_player_scene = ExtResource( 2 )
-melee_scene = ExtResource( 3 )
+swordsman_scene = ExtResource( 3 )
 archer_scene = ExtResource( 4 )
 cavalry_scene = ExtResource( 6 )
 
