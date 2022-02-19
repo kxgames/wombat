@@ -1,18 +1,11 @@
 extends Node
 
-export(PackedScene) var generic_player_scene
-export(PackedScene) var swordsman_scene
-export(PackedScene) var archer_scene
-export(PackedScene) var cavalry_scene
-onready var unit_scene_lookup = {
-	'swordsman': swordsman_scene,
-	'archer': archer_scene,
-	'cavalry': cavalry_scene,
-	}
-onready var collision_flag_manager = get_node("/root/CollisionFlagManager")
+# The Main is the root scene. It is resposible for setting up and holding references to the other major scenes (UI, GameWorld, etc.). It also (tbd) directs the high-level game logic between major scenes when needed (e.g. main menu to playing game).
 
-var players_in_game = {} # {player_id : player}
-var units_in_game = {} # {player_id : [units...]}
+# The code for initial players and units is here temporarily. It seems like it would be better in a godot resource(?) file of some kind. However, I don't understand how to use those yet.
+
+onready var collision_flag_manager = get_node("/root/CollisionFlagManager")
+onready var game_world = get_node("/root/GameWorld")
 
 var init_players = {
 	# {player_id : {players kwargs}}
@@ -26,7 +19,7 @@ var init_players = {
 		},
 	}
 
-var loc_scaling = 150 # to scale the relative locations
+var init_unit_location_scaling = 150 # to scale the relative locations below
 var init_units = {
 	# {"type" : [relative_location, ...] }
 	'swordsman' : [
@@ -45,58 +38,39 @@ var init_units = {
 		]
 	}
 
-# Called when the node enters the scene tree for the first time.
 func _ready():
-	setup_players()
+	# Create players and their initial set of units.
+	for player_id in init_players:
+		game_world.create_player(player_id)
+		create_player_init_units(player_id)
 
-func setup_players():
-	collision_flag_manager.set_all_player_ids(init_players.keys())
-	for p_id in init_players:
-		# Create a new player
-		var player = generic_player_scene.instance()
-		player.setup(p_id)
-		add_child(player)
+func create_player_init_units(player_id):
+	""" Create the initial set of units for a player. """
 
-		players_in_game[p_id] = player
-		units_in_game[p_id] = []
-
-		setup_player_init_units(p_id)
-
-func setup_player_init_units(p_id):
-	""" Create the initial set of units. """
-	var p_info = init_players[p_id]
+	# Get some info about the player
+	var p_info = init_players[player_id]
 	var base_position = p_info['base_position']
 	var facing_angle = p_info['facing_angle']
 
+	# Create all the units
 	for unit_type in init_units:
 		for loc in init_units[unit_type]:
 			# Calculate the unit's position in world coordinates
-			var relative_position = loc.rotated(facing_angle) * loc_scaling
+			var direction = loc.rotated(facing_angle) 
+			var relative_position = direction * init_unit_location_scaling
 			var unit_position = base_position + relative_position
 
-			var new_unit = unit_scene_lookup[unit_type].instance()
-			new_unit.setup({
-				"player" : players_in_game[p_id],
-				"position" : unit_position,
-				#"facing" : facing,
-				})
-			add_child(new_unit)
+			var new_unit = game_world.create_unit(unit_type, unit_position, player_id)
+			new_unit.connect("mouse_entered_unit",
+				$ActionSelectionSystem, "_on_GenericUnit_mouse_entered_unit"
+				)
+			new_unit.connect("mouse_exited_unit", 
+				$ActionSelectionSystem, "_on_GenericUnit_mouse_exited_unit"
+				)
 
-			units_in_game[p_id].append(new_unit)
-			players_in_game[p_id].register_new_unit(new_unit)
 
 func _process(_delta):
-	#print_physics_layer_info()
+	#collision_flag_manager.print_physics_layer_info()
+	#assert(false)
 	pass
 
-func print_physics_layer_info():
-	print()
-	print("Physics layers for players: ", players_in_game.keys())
-	var all_units = []
-	for units_list in units_in_game.values():
-		all_units += units_list
-	for unit in all_units:
-		print(" ", unit, " (p", unit.player.player_id, ") : ")
-		print("  Layers: ", collision_flag_manager.get_player_layer(unit, players_in_game.keys()))
-		print("  Masks: ", collision_flag_manager.get_player_mask(unit, players_in_game.keys()))
-	assert(false)

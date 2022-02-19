@@ -17,6 +17,7 @@ config/icon="res://icon.png"
 [autoload]
 
 CollisionFlagManager="*res://CollisionFlagManager.gd"
+GameWorld="*res://game_world.tscn"
 
 [display]
 

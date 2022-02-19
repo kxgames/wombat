@@ -1,0 +1,14 @@
+[gd_scene load_steps=6 format=2]
+
+[ext_resource path="res://game_world.gd" type="Script" id=1]
+[ext_resource path="res://GenericPlayer.tscn" type="PackedScene" id=2]
+[ext_resource path="res://units/unit_swordsman.tscn" type="PackedScene" id=3]
+[ext_resource path="res://units/unit_archer.tscn" type="PackedScene" id=4]
+[ext_resource path="res://units/unit_cavalry.tscn" type="PackedScene" id=5]
+
+[node name="GameWorld" type="Node"]
+script = ExtResource( 1 )
+generic_player_scene = ExtResource( 2 )
+swordsman_scene = ExtResource( 3 )
+archer_scene = ExtResource( 4 )
+cavalry_scene = ExtResource( 5 )

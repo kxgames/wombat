@@ -1,6 +1,10 @@
 extends KinematicBody2D
 
+signal mouse_entered_unit(unit)
+signal mouse_exited_unit(unit)
+
 onready var collision_flag_manager = get_node("/root/CollisionFlagManager")
+onready var game_world = get_node("/root/GameWorld")
 
 var player
 export var player_id:int
@@ -8,8 +12,12 @@ var is_selected = false
 var movement_target : Vector2
 
 export var unit_speed = 100
+var fighting_speed = 10
 var group_speed = INF
 var velocity :Vector2
+
+var tracking_enemy:KinematicBody2D = null
+var is_fighting = false
 
 func setup(unit_info):
 	player = unit_info['player']
@@ -30,7 +38,7 @@ func ready_collision_flags():
 	"""
 	Overwrite all the collision flags for the unit body and melee zone.
 	"""
-	var other_ids = collision_flag_manager.get_other_players_ids(player_id)
+	var other_ids = game_world.get_other_players_ids(player_id)
 
 	# Belongs to...
 
@@ -65,15 +73,24 @@ func ready_collision_flags():
 #	pass
 
 func _physics_process(_delta):
+	if tracking_enemy:
+		set_movement_target(tracking_enemy.global_position, group_speed)
 	var gap = movement_target - position
-	velocity = gap.normalized() * min(gap.length(), min(group_speed, unit_speed))
+	var speed = min(gap.length(), min(group_speed, unit_speed))
+	if is_fighting:
+		speed = min(speed, fighting_speed)
+	velocity = gap.normalized() * speed
 	var _velocity = move_and_slide(velocity)
 
 func _on_GenericUnit_mouse_entered():
-	# For now do nothing.... But this would be good for hovering information.
-	if false:
-		print("MouseEntered")
-		print(position)
+	# Basically, resend the entered signal but with the unit as an argument
+	# Some outside scenes need to know which unit the mouse is over
+	emit_signal("mouse_entered_unit", self)
+
+func _on_GenericUnit_mouse_exited():
+	# Basically, resend the exited signal but with the unit as an argument
+	# Some outside scenes need to know which unit the mouse is over
+	emit_signal("mouse_exited_unit", self)
 
 func update_unit_selection(new_is_selected):
 	if not is_selected and new_is_selected:
@@ -95,10 +112,24 @@ func get_icon_scale():
 func get_icon_texture():
 	return $IconSprite.texture
 
+func get_body_shape():
+	return $UnitBodyCollision.shape
+
+func reset_tracking():
+	tracking_enemy = null
+
+func attack_enemy(new_tracking_enemy, slowest_speed=INF):
+	set_movement_target(new_tracking_enemy.global_position, slowest_speed)
+	tracking_enemy = new_tracking_enemy
+
 func set_movement_target(new_target, slowest_speed=INF):
 	movement_target = new_target
 	group_speed = slowest_speed
 
 func _on_MeleeZone_body_entered(body:Node):
-	print(" Attack! ", body)
-	assert(false)
+	#is_fighting = true
+	pass
+
+func _on_MeleeZone_body_exited(body:Node):
+	#is_fighting = false
+	pass

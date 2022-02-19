@@ -1,4 +1,4 @@
-extends Area2D
+extends Node2D
 
 signal selection_finished()
 
@@ -10,6 +10,10 @@ var end_pos = Vector2()
 
 var selection_dict = {} # {unit : is_selected}
 
+func reset():
+	is_selecting = false
+	clear_existing_selection()
+
 func get_current_selection():
 	var current_selection = []
 	for unit in selection_dict:
@@ -19,7 +23,7 @@ func get_current_selection():
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	$SelectionBoxCollision.disabled = true
+	$SelectionBox/SelectionBoxCollision.set_deferred("disabled", false)
 
 func _unhandled_input(event):
 	# Note: Use _unhandled_input rather than _input to allow (future) GUIS to grab input first
@@ -49,7 +53,7 @@ func start_new_selection(_event):
 	start_pos = position
 	end_pos = position
 	update_collision_box()
-	$SelectionBoxCollision.set_deferred("disabled", false)
+	$SelectionBox/SelectionBoxCollision.set_deferred("disabled", false)
 
 func drag_new_selection(_event):
 	# Continuing a selection action
@@ -61,7 +65,7 @@ func drag_new_selection(_event):
 func end_new_selection(_event):
 	# Ending a selection action
 	is_selecting = false
-	$SelectionBoxCollision.set_deferred("disabled", true)
+	$SelectionBox/SelectionBoxCollision.set_deferred("disabled", true)
 	update()
 	#if not (event.shift or event.control):
 	emit_signal("selection_finished")
@@ -93,7 +97,7 @@ func update_collision_box():
 
 	# Set the collision shape's positon to the center of the selection region
 	var box_center = (end_pos - start_pos) / 2.0
-	$SelectionBoxCollision.position = box_center
+	$SelectionBox/SelectionBoxCollision.position = box_center
 
 	# Set the collision rect extents to half the width/height (it's used like 
 	# radius). Values are restricted to greater than 1 (so very small, thin, 
@@ -102,7 +106,7 @@ func update_collision_box():
 	var min_extent = 1.0
 	extents.x = max(extents.x, min_extent)
 	extents.y = max(extents.y, min_extent)
-	$SelectionBoxCollision.shape.set_deferred("extents", extents)
+	$SelectionBox/SelectionBoxCollision.shape.set_deferred("extents", extents)
 
 func _draw():
 	if is_selecting: # and end_pos != start_pos:

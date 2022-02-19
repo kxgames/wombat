@@ -1,9 +1,9 @@
 extends Node
+onready var game_world = get_node("/root/GameWorld")
 
 var layer_names_dict = {} # {'name' : id_number}
 var layer_ids_dict = {} # {id_number : 'name'}
 var units_layer_name_format = "Units_p%d"
-var all_player_ids = [1]
 
 func _ready():
 	for i in range(1, 21):
@@ -21,15 +21,17 @@ func _ready():
 			# Add the layer to the dictionaries
 			layer_names_dict[layer_name] = i
 			layer_ids_dict[i] = layer_name
+# Debug functions
+func print_physics_layer_info():
+	var player_ids = game_world.get_player_ids()
+	print()
+	print("Physics layers for players: ", player_ids )
+	for unit in get_tree().get_nodes_in_group("all_units"):
+		print(" ", unit, " (p", unit.player_id, ") : ")
+		print("  Layers: ", get_player_layer(unit, player_ids))
+		print("  Masks: ", get_player_mask(unit, player_ids))
 
 # Getters
-func get_other_players_ids(player_id):
-	var others = []
-	for p_id in all_player_ids:
-		if p_id != player_id:
-			others.append(p_id)
-	return others
-
 func get_layer_names(player_ids):
 	if typeof(player_ids) == TYPE_ARRAY:
 		# Multiple player ids given
@@ -59,9 +61,6 @@ func get_collision_mask(collision_object, layer_names):
 	return manage_collision_flags('mask', collision_object, layer_names, null, false)
 
 # Setters
-func set_all_player_ids(new_list):
-	all_player_ids = new_list
-
 func set_player_layer(collision_object, player_ids, new_value):
 	""" Set the layer flag for a single or multiple player(s) for a collision object. """
 	set_collision_layer(collision_object, get_layer_names(player_ids), new_value)

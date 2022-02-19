@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://units/unit_ghost.tscn" type="PackedScene" id=1]
+[ext_resource path="res://UI/AcSeS/action_subsystem.gd" type="Script" id=2]
+
+[node name="ActionSubsystem" type="Node2D"]
+script = ExtResource( 2 )
+ghost_scene = ExtResource( 1 )

@@ -11,7 +11,7 @@ radius = 75.0
 [sub_resource type="CircleShape2D" id=1]
 radius = 50.0
 
-[node name="GenericUnit" type="KinematicBody2D"]
+[node name="GenericUnit" type="KinematicBody2D" groups=["all_units"]]
 collision_layer = 2
 collision_mask = 2
 input_pickable = true
@@ -42,4 +42,7 @@ shape = SubResource( 2 )
 [node name="UnitBodyCollision" type="CollisionShape2D" parent="."]
 shape = SubResource( 1 )
 
+[connection signal="mouse_entered" from="." to="." method="_on_GenericUnit_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_GenericUnit_mouse_exited"]
 [connection signal="body_entered" from="MeleeZone" to="." method="_on_MeleeZone_body_entered"]
+[connection signal="body_exited" from="MeleeZone" to="." method="_on_MeleeZone_body_exited"]
