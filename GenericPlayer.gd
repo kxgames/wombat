@@ -2,7 +2,7 @@ extends Node
 
 export var player_id :int = 0
 
-var unit_dict = {} # {unit : unit}
+var unit_dict = {} # {unit : null}
 
 var player_color = null
 var player_colors_lookup = {
@@ -27,4 +27,7 @@ func _ready():
 #	pass
 
 func register_new_unit(new_unit):
-	unit_dict[new_unit] = new_unit
+	unit_dict[new_unit] = null
+
+func deregister_dead_unit(dead_unit):
+	unit_dict.erase(dead_unit)

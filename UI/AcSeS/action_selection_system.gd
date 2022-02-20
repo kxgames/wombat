@@ -1,6 +1,7 @@
 extends Node2D
 
 var current_selection = []
+var current_player_id = 1
 
 func _ready():
 	pass
@@ -18,6 +19,12 @@ func _process(_delta):
 		elif $CancelationTimer.time_left == 0:
 			# Then cancel the selection if the continues to press cancel again.
 			$SelectionSubsystem.reset()
+
+func _on_switch_player(player_id):
+	current_player_id = player_id
+	$ActionSubsystem.switch_player(player_id)
+	$SelectionSubsystem.switch_player(player_id)
+	current_selection = []
 
 func _on_SelectionSubsystem_selection_finished():
 	current_selection = $SelectionSubsystem.get_current_selection()

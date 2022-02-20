@@ -43,6 +43,10 @@ func _ready():
 	for player_id in init_players:
 		game_world.create_player(player_id)
 		create_player_init_units(player_id)
+		$HUD.add_new_player(player_id)
+	$HUD.connect("switch_player", $ActionSelectionSystem, "_on_switch_player")
+
+	$HUD/SelectPlayerButton.select(0)
 
 func create_player_init_units(player_id):
 	""" Create the initial set of units for a player. """

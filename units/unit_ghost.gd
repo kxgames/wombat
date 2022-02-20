@@ -19,7 +19,6 @@ func hide_sprite():
 	$WhiteBackground.hide()
 
 func guide_host(slowest_speed=INF, attack_unit=null):
-	print("Guide host: ", host_unit, ", ", slowest_speed, ", ", attack_unit)
 	if host_unit:
 		if attack_unit:
 			host_unit.attack_enemy(attack_unit, slowest_speed)

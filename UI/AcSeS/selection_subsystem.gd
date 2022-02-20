@@ -1,7 +1,10 @@
 extends Node2D
 
+onready var game_world = get_node("/root/GameWorld")
 signal selection_finished()
 
+var current_player_id = 1
+var last_was_doubleclick = false
 var is_selecting = false
 var is_ctrl_selecting = false
 var is_cancelling = false
@@ -10,8 +13,13 @@ var end_pos = Vector2()
 
 var selection_dict = {} # {unit : is_selected}
 
+func switch_player(player_id):
+	current_player_id = player_id
+	reset()
+
 func reset():
 	is_selecting = false
+	last_was_doubleclick = false
 	clear_existing_selection()
 
 func get_current_selection():
@@ -43,7 +51,7 @@ func _unhandled_input(event):
 			drag_new_selection(event)
 		is_ctrl_selecting = event.control
 
-func start_new_selection(_event):
+func start_new_selection(event):
 	# Starting a new selection action
 	is_selecting = true
 
@@ -54,6 +62,9 @@ func start_new_selection(_event):
 	end_pos = position
 	update_collision_box()
 	$SelectionBox/SelectionBoxCollision.set_deferred("disabled", false)
+
+	if event.is_doubleclick():
+		last_was_doubleclick = true
 
 func drag_new_selection(_event):
 	# Continuing a selection action
@@ -83,9 +94,26 @@ func clear_existing_selection():
 		set_selection(unit, false)
 
 func _on_SelectionBox_body_entered(body):
-	if is_selecting and body.has_method("update_unit_selection"):
+	var is_valid = game_world.check_object_in_player_groups(
+		body, current_player_id, ['selectable', 'units']
+		)
+
+	if is_selecting and is_valid:
 		# The body is a selectable unit, select it (if not ctrl clicking)
-		set_selection(body, not is_ctrl_selecting)
+		if last_was_doubleclick:
+			# Select all of the same type (hacky way to detect double click...)
+			last_was_doubleclick = false
+			var player_units_tag = game_world.get_player_group_tag(
+				current_player_id, 'units'
+				)
+			for unit in get_tree().get_nodes_in_group(player_units_tag):
+				# Search all units the current player owns...
+				if unit.is_in_group(body.get_unit_group_tag()):
+					# to find those that are the same unit type as body
+					set_selection(unit, not is_ctrl_selecting)
+		else:
+			# Just select one unit
+			set_selection(body, not is_ctrl_selecting)
 
 func _on_SelectionBox_body_exited(body):
 	if is_selecting and body.has_method("update_unit_selection"):

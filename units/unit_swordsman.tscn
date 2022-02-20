@@ -4,6 +4,7 @@
 [ext_resource path="res://art/sword_icon.png" type="Texture" id=2]
 
 [node name="SwordsmanUnit" instance=ExtResource( 1 )]
+unit_name = "swordsman"
 
 [node name="IconSprite" parent="." index="2"]
 texture = ExtResource( 2 )

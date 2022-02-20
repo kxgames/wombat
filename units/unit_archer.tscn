@@ -4,6 +4,7 @@
 [ext_resource path="res://units/GenericUnit.tscn" type="PackedScene" id=2]
 
 [node name="ArcherUnit" instance=ExtResource( 2 )]
+unit_name = "archer"
 
 [node name="IconSprite" parent="." index="2"]
 texture = ExtResource( 1 )

@@ -1,10 +1,10 @@
 extends Node2D
 
 onready var game_world = get_node("/root/GameWorld")
-onready var collision_flag_manager = get_node("/root/CollisionFlagManager")
 
 export(PackedScene) var ghost_scene
 
+var current_player_id = 1
 var is_actuating = false
 var mouse_target_start = Vector2()
 var mouse_target_end = Vector2()
@@ -17,6 +17,11 @@ var attack_target = null
 
 func _ready():
 	pass
+
+func switch_player(player_id):
+	current_player_id = player_id
+	selected_units = []
+	reset()
 
 func reset():
 	is_actuating = false
@@ -52,6 +57,10 @@ func _unhandled_input(event):
 func start_new_action(_event):
 	is_actuating = true
 	init_drag_angle = null
+	mouse_target_start = get_global_mouse_position()
+	mouse_target_end = get_global_mouse_position()
+	position = mouse_target_start
+	rotation = 0
 
 	# Calculate centroid
 	centroid = Vector2()
@@ -59,10 +68,13 @@ func start_new_action(_event):
 		centroid += unit.position
 	centroid /= selected_units.size()
 
-	mouse_target_start = get_global_mouse_position()
-	mouse_target_end = get_global_mouse_position()
-	position = mouse_target_start
-	rotation = 0
+	# Check if the mouse is right clicking a unit
+	var is_click_over_enemy = false
+	var hovered_unit = null
+	if not mouse_hovering_dict.empty():
+		assert(mouse_hovering_dict.size() == 1)
+		hovered_unit = mouse_hovering_dict.values()[0]
+		is_click_over_enemy = check_is_attackable(hovered_unit)
 
 	# Create ghosts for each selected unit
 	clear_ghost_list()
@@ -73,22 +85,25 @@ func start_new_action(_event):
 		ghost_list.append(ghost)
 		ghost.connect("delete_ghost", self, "_on_delete_ghost")
 
-		if mouse_hovering_dict.empty():
-			# Not right clicking on an enemy.
-			# Keep relative positioning from centroid
-			print("Regular start action", mouse_hovering_dict)
-			attack_target = null
-			ghost.position = unit.position - centroid
-		else:
-			print("Targetting start action", mouse_hovering_dict)
-			# Targetting unit for attack! (wait for release to exectue)
+		if is_click_over_enemy:
+			# Targetting enemy unit for attack! (wait for release to execute)
 			# Save the target because the dict will likely change soon
-			assert(mouse_hovering_dict.size() == 1)
-			attack_target = mouse_hovering_dict.values()[0]
-			print("About to attack", attack_target)
+			attack_target = hovered_unit
 			position = attack_target.global_position
 			ghost.position = Vector2() # All ghosts are positioned on the target
 			ghost.hide_sprite()
+		else:
+			# Not right clicking on an enemy. Show formation.
+			# Keep relative positioning from centroid
+			attack_target = null
+			ghost.position = unit.position - centroid
+
+func check_is_attackable(unknown_unit):
+	if unknown_unit == null:
+		return(false)
+	var player_tag = game_world.get_player_group_tag(current_player_id, 'units')
+	#var enemy_group_tags = game_world.get_other_players_group_tags(current_player_id, 'units')
+	return not unknown_unit.is_in_group(player_tag)
 
 func drag_new_action(_event):
 	if attack_target:
@@ -120,10 +135,6 @@ func end_new_action(_event):
 	var slowest_speed = INF
 	for ghost in ghost_list:
 		slowest_speed = min(slowest_speed, ghost.get_host_speed())
-
-	if attack_target:
-		print(" Attacking ", attack_target)
-		print(" Ghost list: ", ghost_list)
 
 	# Move all the units with the slowest unit
 	for ghost in ghost_list:

@@ -13,10 +13,50 @@ onready var unit_scene_lookup = {
 	}
 
 var players_in_game = {} # {player_id : player}
-var units_in_game = {} # {player_id : [units...]}
+var units_in_game = {} # {unit : player_id}
 
+var player_group_tags = {} # {player_id : {type : group_tag}}
+# Example: player_group_tags = {
+#		1 : {
+#			'selectable': 'P1_selectable_objects',
+#			'units' : 'P1_units',
+#			'buildings' : 'P1_buildings',
+#			...
+#			}}
 
-# Called when the node enters the scene tree for the first time.
+# Getters
+func get_player_ids():
+	return players_in_game.keys()
+
+func get_other_players_ids(player_id):
+	# Get the ids of everyone else but player_id
+	var others = []
+	for p_id in get_player_ids():
+		if p_id != player_id:
+			others.append(p_id)
+	return others
+
+func get_player_group_tag(player_id, tag_type):
+	assert(tag_type in player_group_tags[player_id])
+	return player_group_tags[player_id][tag_type]
+
+func get_other_players_group_tags(player_id, tag_type):
+	# Get the tags for everyone else but player_id
+	var others_tag_list = []
+	for other_id in get_other_players_ids(player_id):
+		others_tag_list.append(get_player_group_tag(other_id, tag_type))
+	return others_tag_list
+
+func check_object_in_player_groups(object, player_id, tag_types):
+	var in_required_groups = true
+	for tag_type in tag_types:
+		var tag = get_player_group_tag(player_id, tag_type)
+		in_required_groups = in_required_groups and object.is_in_group(tag)
+	return in_required_groups
+
+# Setters?
+
+# Setup and Creation
 func _ready():
 	pass # Replace with function body.
 
@@ -26,7 +66,10 @@ func create_player(player_id):
 	add_child(new_player)
 
 	players_in_game[player_id] = new_player
-	units_in_game[player_id] = []
+	player_group_tags[player_id] = {
+		'selectable' : 'P%d_selectable'%player_id,
+		'units' : 'P%d_units'%player_id,
+		}
 
 	return new_player
 
@@ -39,18 +82,16 @@ func create_unit(unit_type, unit_position, player_id):
 		})
 	add_child(new_unit)
 
-	units_in_game[player_id].append(new_unit)
+	new_unit.add_to_group(player_group_tags[player_id]['selectable'])
+	new_unit.add_to_group(player_group_tags[player_id]['units'])
+	units_in_game[new_unit] = player_id
 	players_in_game[player_id].register_new_unit(new_unit)
 
 	return new_unit
 
-func get_player_ids():
-	return players_in_game.keys()
-
-func get_other_players_ids(player_id):
-	var others = []
-	for p_id in get_player_ids():
-		if p_id != player_id:
-			others.append(p_id)
-	return others
+# Destruction
+func delete_unit(dead_unit):
+	var player_id = units_in_game[dead_unit]
+	units_in_game.erase(dead_unit)
+	players_in_game[player_id].deregister_dead_unit(dead_unit)
 

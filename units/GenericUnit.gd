@@ -6,8 +6,10 @@ signal mouse_exited_unit(unit)
 onready var collision_flag_manager = get_node("/root/CollisionFlagManager")
 onready var game_world = get_node("/root/GameWorld")
 
+export var unit_name = "generic_unit"
 var player
 export var player_id:int
+
 var is_selected = false
 var movement_target : Vector2
 
@@ -33,6 +35,8 @@ func _ready():
 	$WhiteBackground.self_modulate = player_color
 
 	ready_collision_flags()
+
+	add_to_group(unit_name)
 
 func ready_collision_flags():
 	"""
@@ -105,6 +109,12 @@ func select_unit():
 func unselect_unit():
 	is_selected = false
 	$SelectedSprite.hide()
+
+func get_unit_name():
+	return unit_name
+
+func get_unit_group_tag():
+	return unit_name
 
 func get_icon_scale():
 	return $IconSprite.scale
