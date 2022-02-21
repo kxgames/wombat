@@ -21,15 +21,38 @@ func _ready():
 			# Add the layer to the dictionaries
 			layer_names_dict[layer_name] = i
 			layer_ids_dict[i] = layer_name
+
 # Debug functions
-func print_physics_layer_info():
+func print_physics_layer_info(print_str=false):
 	var player_ids = game_world.get_player_ids()
-	print()
-	print("Physics layers for players: ", player_ids )
+	var msg = '\n'
+	msg += str("Physics layers for players: ", player_ids ) + '\n'
 	for unit in get_tree().get_nodes_in_group("all_units"):
-		print(" ", unit, " (p", unit.player_id, ") : ")
-		print("  Layers: ", get_player_layer(unit, player_ids))
-		print("  Masks: ", get_player_mask(unit, player_ids))
+		msg += str(" ", unit, " (p", unit.player_id, ") : ") + '\n'
+		msg += str("  Layers: ", get_player_layer(unit, player_ids)) + '\n'
+		msg += str("  Masks: ", get_player_mask(unit, player_ids)) + '\n'
+	if print_str:
+		print(msg)
+	return msg
+
+func print_bitmasks(collision_object, print_str=false):
+	var layer_names = []
+	var layer_bits_str = ""
+	var mask_bits_str = ""
+	for bit in range(7):
+		var layer_name_str = "layer_names/2d_physics/layer_%d" % (bit+1)
+		layer_names.append(ProjectSettings.get_setting(layer_name_str))
+		layer_bits_str += "%d" % int(collision_object.get_collision_layer_bit(bit))
+		mask_bits_str += "%d" % int(collision_object.get_collision_mask_bit(bit))
+
+	var msg = str("Bitmask for ", collision_object) + '\n'
+	msg += str("  Layer names: ", layer_names) + '\n'
+	msg += str("  Layer: ", layer_bits_str) + '\n'
+	msg += str("  Mask: ", mask_bits_str) + '\n'
+	msg += '\n'
+	if print_str:
+		print(msg)
+	return msg
 
 # Getters
 func get_layer_names(player_ids):
@@ -108,7 +131,7 @@ func manage_collision_flags(
 		'new_value' is ignored and the value or a list of values is returned, 
 		matching the 'layer_names' argument.
 	"""
-
+	assert(collision_object != null)
 	if typeof(layer_names) == TYPE_ARRAY:
 		# Multiple layer names given
 		# Call this function again for each individual layer

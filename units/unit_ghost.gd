@@ -18,13 +18,13 @@ func hide_sprite():
 	$GhostSprite.hide()
 	$WhiteBackground.hide()
 
-func guide_host(slowest_speed=INF, attack_unit=null):
+func guide_host(slowest_speed=INF, chase_unit=null):
 	if host_unit:
-		if attack_unit:
-			host_unit.attack_enemy(attack_unit, slowest_speed)
+		if chase_unit:
+			host_unit.chase_enemy(chase_unit, slowest_speed, true)
 		else:
 			host_unit.reset_tracking()
-			host_unit.set_movement_target(global_position, slowest_speed)
+			host_unit.set_movement_target(global_position, slowest_speed, true)
 	else:
 		emit_signal("delete_ghost", self)
 

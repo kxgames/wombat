@@ -12,6 +12,11 @@ onready var unit_scene_lookup = {
 	'cavalry': cavalry_scene,
 	}
 
+export var print_debug_flags = {
+	'collision_flags' : false,
+	'combat_engagement' : true
+	}
+
 var players_in_game = {} # {player_id : player}
 var units_in_game = {} # {unit : player_id}
 
@@ -23,6 +28,58 @@ var player_group_tags = {} # {player_id : {type : group_tag}}
 #			'buildings' : 'P1_buildings',
 #			...
 #			}}
+
+# Debug
+func debug_print_multiple(debug_types, messages, crash=false):
+	"""
+	Print multiple messages if any of the provided debug_types are actively outputing.
+
+	Parameters
+	----------
+	debug_types : string or array of strings
+		The type or types of debug message to check for activity. Can be a 
+		string representing one type or an array of strings for multiple types.
+
+	messages : array of a strings and/or arrays of objects
+		The messages to print if the debug type is active. The elements in the 
+		messages array can be a single string or an array of objects that will 
+		be converted into a string with the str function.
+	crash : bool=false
+		Indicates if the game should crash after printing message.
+	"""
+	if typeof(debug_types) == TYPE_STRING:
+		# Convert single string to array containing string
+		debug_types = [debug_types]
+	for db_type in print_debug_flags:
+		if db_type in debug_types and print_debug_flags[db_type]:
+			# At least one of the flags is active, print all of the messages
+			for message in messages:
+				if typeof(message) == TYPE_ARRAY:
+					# Convert an array of things into a string
+					message = PoolStringArray(message).join('')
+				print(message)
+			if crash:
+				assert(false)
+			break # only print messages once!
+
+func debug_print(debug_types, message, crash=false):
+	"""
+	Print a message if any of the provided debug_types are actively outputing.
+
+	Parameters
+	----------
+	debug_types : string or array of strings
+		The type of debug message to check for activity. Can be a string 
+		representing one type or an array of strings for multiple types.
+
+	message : string or array of objects
+		The message to print if the debug type is active. Can be a single 
+		string or an array of objects that will be converted into a string (with 
+		the str function).
+	crash : bool=false
+		Indicates if the game should crash after printing message
+	"""
+	debug_print_multiple(debug_types, [message], crash)
 
 # Getters
 func get_player_ids():
@@ -47,6 +104,7 @@ func get_other_players_group_tags(player_id, tag_type):
 		others_tag_list.append(get_player_group_tag(other_id, tag_type))
 	return others_tag_list
 
+# Checkers
 func check_object_in_player_groups(object, player_id, tag_types):
 	var in_required_groups = true
 	for tag_type in tag_types:
