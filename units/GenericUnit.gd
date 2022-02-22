@@ -180,12 +180,17 @@ func update_movement(_delta):
 			set_movement_target(chasing_enemy_unit.global_position, group_speed)
 
 		var gap = movement_target - position
-		#var speed = min(gap.length(), min(group_speed, unit_speed))
-		var speed = min(group_speed, unit_speed)
+		var speed = min(4*gap.length(), min(group_speed, unit_speed))
+		#var speed = min(group_speed, unit_speed)
 
 		if is_under_attack():
 			# The unit is stuck in combat and can't move quickly
 			speed = min(speed, fighting_speed)
+		elif is_retreating and not is_under_attack() and gap.length_squared() < 5:
+			# Was retreating, escaped, and reached retreat destination
+			# End the retreat
+			is_retreating = false
+
 
 		velocity = gap.normalized() * speed
 		var _velocity = move_and_slide(velocity)
@@ -198,7 +203,22 @@ func chase_enemy(other_unit, slowest_speed=INF, user_override_attack=false):
 			other_unit.global_position, slowest_speed, user_override_attack
 			)
 		chasing_enemy_unit = other_unit
-		engagement_zone_activate(preferred_attack_type)
+
+		if not $MeleeZoneEngage.monitoring:
+			# Engagement zone not active yet, activate it then wait a frame
+			engagement_zone_activate(preferred_attack_type)
+			yield(get_tree(), "idle_frame")
+
+		var overlapping = $MeleeZoneEngage.get_overlapping_bodies()
+		if overlapping:
+			dbg_print('combat_engagement',
+				["!!! ", self, " is already overlapping ", overlapping])
+			for body in overlapping:
+				#_on_MeleeZoneEngage_body_entered(body)
+				call_deferred("_on_MeleeZoneEngage_body_entered", body)
+		else:
+			dbg_print('combat_engagement',
+				["!!! ", self, " is not overlapping others."])
 	else:
 		dbg_print('combat_engagement', ["  ", self, " cannot chase ", other_unit])
 
@@ -242,26 +262,24 @@ func receive_damage(damage_amount):
 func entered_attack_zone_of(enemy_unit, attack_type):
 	# remember who is attacking this unit
 	attacked_by_enemies[enemy_unit] = attack_type
+	dbg_print('combat_engagement', [self, ' has been attacked by ', enemy_unit])
 
 	if not is_attacking() and not is_retreating:
 		# This unit was not expecting an attack, reciprocate the attack
-		dbg_print_m('combat_engagement', [
-			['  ', self, ' is defending from new attacker ', enemy_unit],
-			['  ', self, " is attacking: ", attacking_enemies],
-			['  ', self, " is retreating: ", is_retreating],
-			])
+		dbg_print('combat_engagement',
+			['  ', self, ' is counter-attacking ', enemy_unit])
 		chase_enemy(enemy_unit)
 	else:
 		# This unit was already attacking other units or is retreating. Ignore the new attacker
 		if is_attacking():
 			dbg_print('combat_engagement',
 				[self, ' is ignoring new attacker ', enemy_unit,
-				"because it's already attacking other units"]
+				" because it's already attacking other units"]
 				)
 		if is_retreating:
 			dbg_print('combat_engagement',
 				[self, ' is ignoring new attacker ', enemy_unit,
-				"because it is retreating"]
+				" because it is retreating"]
 				)
 
 func escaped_attack_zone_of(enemy_unit, attack_type):
@@ -320,9 +338,11 @@ func _on_MeleeZoneEngage_body_entered(body:Node):
 	dbg_print('combat_engagement',
 		["Body ", body, " entered engagement zone of ", self])
 	if body == chasing_enemy_unit:
-		dbg_print('combat_engagement', ["  Body entered is chasing target"])
+		dbg_print('combat_engagement', ["  Body entered is the chasing target"])
 		# This unit has caught the enemy unit, attack them with a melee attack
 		start_attacking_unit(chasing_enemy_unit, 'melee')
+	else:
+		dbg_print('combat_engagement', ["  But body is not the chasing target. Ignoring it."])
 
 func _on_MeleeZoneDisengage_body_exited(body:Node):
 	dbg_print('combat_engagement',
@@ -335,16 +355,20 @@ func _on_MeleeZoneDisengage_body_exited(body:Node):
 func engagement_zone_activate(_attack_type):
 	dbg_print('combat_engagement', ["Activating engagement zone of ", self])
 	$MeleeZoneEngage.set_deferred("monitoring", true)
+	#$MeleeZoneEngage/MeleeZoneCollision.shape.set_deferred("disabled", false)
 
 func engagement_zone_deactivate(_attack_type):
 	dbg_print('combat_engagement', ["Deactivating engagement zone of ", self])
 	$MeleeZoneEngage.set_deferred("monitoring", false)
+	#$MeleeZoneEngage/MeleeZoneCollision.shape.set_deferred("disabled", true)
 
 func disengagement_zone_activate(_attack_type):
 	dbg_print('combat_engagement', ["Activating disengagement zone of ", self])
 	$MeleeZoneDisengage.set_deferred("monitoring", true)
+	#$MeleeZoneDisengage/MeleeZoneCollision.shape.set_deferred("disabled", false)
 
 func disengagement_zone_deactivate(_attack_type):
 	dbg_print('combat_engagement', ["Deactivating disengagement zone of ", self])
 	$MeleeZoneDisengage.set_deferred("monitoring", false)
+	#$MeleeZoneDisengage/MeleeZoneCollision.shape.set_deferred("disabled", true)
 
