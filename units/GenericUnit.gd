@@ -2,6 +2,7 @@ extends KinematicBody2D
 
 signal mouse_entered_unit(unit)
 signal mouse_exited_unit(unit)
+signal unit_died(unit)
 
 onready var collision_flag_manager = get_node("/root/CollisionFlagManager")
 onready var game_world = get_node("/root/GameWorld")
@@ -22,11 +23,13 @@ export var preferred_attack_type = 'melee'
 var chasing_enemy_unit:KinematicBody2D = null
 var attacking_enemies = {} # {enemy_unit : attack_type}
 var attacked_by_enemies = {} # {enemy_unit : attack_type}
+var is_alive = true
 var is_retreating = false
 var damage_lookup = {'melee' : 5.0} # {attack_type : damage_per_sec}
 
 func dbg_print(debug_type, message, crash=false):
 	game_world.debug_print(debug_type, message, crash)
+
 func dbg_print_m(debug_type, messages, crash=false):
 	game_world.debug_print_multiple(debug_type, messages, crash)
 
@@ -46,7 +49,6 @@ func _ready():
 
 	# Hide/disable things not needed at the start
 	$SelectedSprite.hide()
-	$HealthBarPosition.hide()
 	var player_color = player.player_color
 	$WhiteBackground.self_modulate = player_color
 
@@ -164,10 +166,12 @@ func is_attacking():
 
 # Game loop functions
 func _process(delta):
-	update_combat(delta)
+	if is_alive:
+		update_combat(delta)
 
 func _physics_process(delta):
-	update_movement(delta)
+	if is_alive:
+		update_movement(delta)
 
 # Movement functions
 func update_movement(_delta):
@@ -176,8 +180,14 @@ func update_movement(_delta):
 		# This unit is not actively attacking anything. Carry on with moving
 
 		if chasing_enemy_unit:
-			# Chasing an enemy unit, update the target position every physics step
-			set_movement_target(chasing_enemy_unit.global_position, group_speed)
+			if is_instance_valid(chasing_enemy_unit):
+				# Chasing an enemy unit, update the target position every physics step
+				set_movement_target(chasing_enemy_unit.global_position, group_speed)
+			else:
+				dbg_print('unit_death', 
+					["Chasing target for ", self, " does not exist (chasing ", 
+					chasing_enemy_unit, ")"])
+				reset_tracking()
 
 		var gap = movement_target - position
 		var speed = min(4*gap.length(), min(group_speed, unit_speed))
@@ -256,8 +266,11 @@ func update_combat(delta):
 
 # Combat receiving functions
 func receive_damage(damage_amount):
-	$HealthBarPosition/HealthBar.value -= damage_amount
-	$HealthBarPosition.show()
+	$HealthBar.change_health(-damage_amount)
+
+	if $HealthBar.is_depleted():
+		# Unit has died.
+		trigger_death()
 
 func entered_attack_zone_of(enemy_unit, attack_type):
 	# remember who is attacking this unit
@@ -303,6 +316,8 @@ func start_attacking_unit(enemy_unit, attack_type):
 func stop_attacking_unit(enemy_unit, attack_type):
 	dbg_print('combat_engagement',
 		["Stopping ", attack_type, " attack by ", self, " towards ", enemy_unit])
+	if chasing_enemy_unit == enemy_unit:
+		reset_tracking()
 	if attacking_enemies[enemy_unit] == attack_type:
 		attacking_enemies.erase(enemy_unit)
 		enemy_unit.escaped_attack_zone_of(self, 'melee')
@@ -315,11 +330,12 @@ func stop_attacking_unit(enemy_unit, attack_type):
 				# The player is giving direct orders to stop attacking
 				# Do not automatically target another unit.
 				dbg_print('combat_engagement', '  Stopping attack because of retreat')
-			elif not is_under_attack():
-				# Not being attacked by anyone, follow the same enemy!
+			elif not is_under_attack() and enemy_unit.is_alive:
+				# Not being attacked by anyone
+				# Follow the same enemy if they still exist!
 				dbg_print('combat_engagement', '  Following enemy')
 				chase_enemy(enemy_unit)
-			else:
+			elif is_under_attack():
 				# Being attacked by other units, automatically switch to the closest one.
 				dbg_print('combat_engagement', '  Switching to another attacker')
 				var closest = null
@@ -332,7 +348,38 @@ func stop_attacking_unit(enemy_unit, attack_type):
 						if e_diff.length_squared() < c_diff.length_squared():
 							closest = enemy # Another enemy is closer
 				chase_enemy(closest)
+			else:
+				# Not sure what is going on!
+				pass
 
+func trigger_death():
+	# Unit has died.
+	if is_alive:
+		dbg_print('unit_death',
+			[self, " has died"])
+		is_alive = false
+
+		# Resolve ongoing combat engagements
+		for enemy in attacking_enemies:
+			stop_attacking_unit(enemy, attacking_enemies[enemy])
+		for enemy in attacked_by_enemies:
+			enemy.respond_to_enemy_death(self)
+
+		# Let the world know
+		emit_signal("unit_died", self)
+		#yield(get_tree(), "idle_frame") # Wait a frame
+	else:
+		dbg_print('unit_death',
+			[self, " already died (skipping)"])
+
+
+func respond_to_enemy_death(dead_unit):
+	if chasing_enemy_unit == dead_unit:
+		reset_tracking()
+	if dead_unit in attacked_by_enemies:
+		attacked_by_enemies.erase(dead_unit)
+	if dead_unit in attacking_enemies:
+		stop_attacking_unit(dead_unit, attacking_enemies[dead_unit])
 
 func _on_MeleeZoneEngage_body_entered(body:Node):
 	dbg_print('combat_engagement',

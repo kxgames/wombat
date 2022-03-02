@@ -39,12 +39,12 @@ var init_units = {
 	}
 
 func _ready():
+	game_world.connect("unit_deleted", $ActionSelectionSystem, "_on_unit_deleted")
 	# Create players and their initial set of units.
 	for player_id in init_players:
 		game_world.create_player(player_id)
 		$HUD.add_new_player(player_id)
 	$HUD.connect("switch_player", $ActionSelectionSystem, "_on_switch_player")
-
 	$HUD/SelectPlayerButton.select(0)
 
 	for player_id in init_players:

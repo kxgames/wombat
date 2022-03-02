@@ -11,7 +11,7 @@ var is_cancelling = false
 var start_pos = Vector2()
 var end_pos = Vector2()
 
-var selection_dict = {} # {unit : is_selected}
+var selection_dict = {} # {unit_id : is_selected}
 
 func switch_player(player_id):
 	current_player_id = player_id
@@ -24,9 +24,9 @@ func reset():
 
 func get_current_selection():
 	var current_selection = []
-	for unit in selection_dict:
-		if selection_dict[unit]:
-			current_selection.append(unit)
+	for unit_id in selection_dict:
+		if selection_dict[unit_id]:
+			current_selection.append(instance_from_id(unit_id))
 	return current_selection
 
 # Called when the node enters the scene tree for the first time.
@@ -82,16 +82,26 @@ func end_new_selection(_event):
 	emit_signal("selection_finished")
 
 func set_selection(unit, new_status):
-	assert(unit.has_method("update_unit_selection"))
-	if not unit in selection_dict or selection_dict[unit] != new_status:
-		# New unit or existing unit's status is changing, actually do stuff
-		selection_dict[unit] = new_status
-		unit.update_unit_selection(new_status)
+	if is_instance_valid(unit):
+		assert(unit.has_method("update_unit_selection"))
+		var unit_id = unit.get_instance_id()
+		if not unit_id in selection_dict or selection_dict[unit_id] != new_status:
+			# New unit or existing unit's status is changing, actually do stuff
+			selection_dict[unit_id] = new_status
+			unit.update_unit_selection(new_status)
 
 func clear_existing_selection():
 	# Clear out existing selections
-	for unit in selection_dict:
-		set_selection(unit, false)
+	for unit_id in selection_dict:
+		set_selection(instance_from_id(unit_id), false)
+
+func _on_unit_deleted(deleted_unit_id):
+	game_world.debug_print('unit_death',
+		["SelectionSubsystem responding to unit death (id = ", deleted_unit_id, ")"])
+	if deleted_unit_id in selection_dict:
+		game_world.debug_print('unit_death',
+			["SelectionSubsystem erasing (id = ", deleted_unit_id, ")"])
+		selection_dict.erase(deleted_unit_id)
 
 func _on_SelectionBox_body_entered(body):
 	var is_valid = game_world.check_object_in_player_groups(

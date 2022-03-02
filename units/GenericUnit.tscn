@@ -54,7 +54,7 @@ shape = SubResource( 3 )
 [node name="UnitBodyCollision" type="CollisionShape2D" parent="."]
 shape = SubResource( 1 )
 
-[node name="HealthBarPosition" parent="." instance=ExtResource( 5 )]
+[node name="HealthBar" parent="." instance=ExtResource( 5 )]
 position = Vector2( 0, -65 )
 
 [connection signal="mouse_entered" from="." to="." method="_on_GenericUnit_mouse_entered"]

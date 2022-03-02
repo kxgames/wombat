@@ -1,5 +1,7 @@
 extends Node2D
 
+onready var game_world = get_node("/root/GameWorld")
+
 var current_selection = []
 var current_player_id = 1
 
@@ -19,6 +21,11 @@ func _process(_delta):
 		elif $CancelationTimer.time_left == 0:
 			# Then cancel the selection if the continues to press cancel again.
 			$SelectionSubsystem.reset()
+
+func _on_unit_deleted(deleted_unit_id):
+	game_world.debug_print('unit_death', ["AcSeS responding to unit death (id = ", deleted_unit_id, ")"])
+	$SelectionSubsystem._on_unit_deleted(deleted_unit_id)
+	$ActionSubsystem._on_unit_deleted(deleted_unit_id)
 
 func _on_switch_player(player_id):
 	current_player_id = player_id

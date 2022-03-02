@@ -10,3 +10,4 @@ lib/
 # Other
 export_presets.cfg
 .mono/
+exports/

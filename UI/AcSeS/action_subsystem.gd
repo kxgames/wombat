@@ -10,9 +10,9 @@ var mouse_target_start = Vector2()
 var mouse_target_end = Vector2()
 var centroid = Vector2()
 var init_drag_angle = null
-var selected_units = []
+var selected_units_dict = {} # {unit_id : unit}
 var ghost_list = []
-var mouse_hovering_dict = {} # {unit : unit}
+var mouse_hovering_dict = {} # {unit_id : unit}
 var attack_target = null
 
 func _ready():
@@ -20,7 +20,7 @@ func _ready():
 
 func switch_player(player_id):
 	current_player_id = player_id
-	selected_units = []
+	selected_units_dict = {}
 	reset()
 
 func reset():
@@ -30,22 +30,24 @@ func reset():
 
 func update_selection(new_selection):
 	reset()
-	selected_units = new_selection
+	selected_units_dict = {}
+	for new_unit in new_selection:
+		selected_units_dict[new_unit.get_instance_id()] = new_unit
 
 func hovering_dict_add(unit):
-	assert(not unit in mouse_hovering_dict)
-	mouse_hovering_dict[unit] = unit
+	assert(not unit.get_instance_id() in mouse_hovering_dict)
+	mouse_hovering_dict[unit.get_instance_id()] = unit
 
 func hovering_dict_erase(unit):
-	assert(unit in mouse_hovering_dict)
-	mouse_hovering_dict.erase(unit)
+	assert(unit.get_instance_id() in mouse_hovering_dict)
+	mouse_hovering_dict.erase(unit.get_instance_id())
 
 func _unhandled_input(event):
 	# Note: Use _unhandled_input rather than _input to allow (future) GUIS to grab input first
 	if event is InputEventMouseButton:
 		if event.button_index == BUTTON_RIGHT:
 			if event.pressed:
-				if selected_units.size() > 0:
+				if selected_units_dict.size() > 0:
 					start_new_action(event)
 			else:
 				end_new_action(event)
@@ -64,21 +66,22 @@ func start_new_action(_event):
 
 	# Calculate centroid
 	centroid = Vector2()
-	for unit in selected_units:
+	for unit in selected_units_dict.values():
 		centroid += unit.position
-	centroid /= selected_units.size()
+	centroid /= selected_units_dict.size()
 
 	# Check if the mouse is right clicking a unit
 	var is_click_over_enemy = false
 	var hovered_unit = null
 	if not mouse_hovering_dict.empty():
+		# There should only be 1 unit in the dict...
 		assert(mouse_hovering_dict.size() == 1)
 		hovered_unit = mouse_hovering_dict.values()[0]
 		is_click_over_enemy = check_is_attackable(hovered_unit)
 
 	# Create ghosts for each selected unit
 	clear_ghost_list()
-	for unit in selected_units:
+	for unit in selected_units_dict.values():
 		var ghost = ghost_scene.instance()
 		add_child(ghost)
 		ghost.embody(unit)
@@ -106,7 +109,7 @@ func check_is_attackable(unknown_unit):
 	return not unknown_unit.is_in_group(player_tag)
 
 func drag_new_action(_event):
-	if attack_target:
+	if attack_target and is_instance_valid(attack_target):
 		# Ignore dragging if targetting a unit
 		update()
 		return
@@ -151,6 +154,24 @@ func _on_delete_ghost(dead_ghost):
 			new_list.append(ghost)
 	ghost_list = new_list
 	update()
+
+func _on_unit_deleted(deleted_unit_id):
+	game_world.debug_print('unit_death',
+		["ActionSubsystem responding to unit death (id = ", deleted_unit_id, ")"])
+	if deleted_unit_id in selected_units_dict:
+		selected_units_dict.erase(deleted_unit_id)
+	if deleted_unit_id in mouse_hovering_dict:
+		mouse_hovering_dict.erase(deleted_unit_id)
+	if is_instance_valid(attack_target):
+		if attack_target.get_instance_id() == deleted_unit_id:
+			attack_target = null
+	else:
+		attack_target = null
+	for ghost in ghost_list:
+		ghost._on_unit_deleted(deleted_unit_id)
+
+	update()
+
 
 func clear_ghost_list():
 	# Delete all ghosts

@@ -2,6 +2,8 @@ extends Node
 
 # The GameWorld is meant to store references to all the other in-game nodes like units, buildings, and players. It is not intended to do any game logic beyond setup.
 
+signal unit_deleted(unit)
+
 export(PackedScene) var generic_player_scene
 export(PackedScene) var swordsman_scene
 export(PackedScene) var archer_scene
@@ -13,8 +15,9 @@ onready var unit_scene_lookup = {
 	}
 
 export var print_debug_flags = {
+	'unit_death' : false,
 	'collision_flags' : false,
-	'combat_engagement' : true
+	'combat_engagement' : false
 	}
 
 var players_in_game = {} # {player_id : player}
@@ -145,11 +148,21 @@ func create_unit(unit_type, unit_position, player_id):
 	units_in_game[new_unit] = player_id
 	players_in_game[player_id].register_new_unit(new_unit)
 
+	new_unit.connect("unit_died", self, "delete_unit")
+
 	return new_unit
 
 # Destruction
-func delete_unit(dead_unit):
-	var player_id = units_in_game[dead_unit]
-	units_in_game.erase(dead_unit)
-	players_in_game[player_id].deregister_dead_unit(dead_unit)
+func delete_unit(dying_unit):
+	debug_print('unit_death', ["World responding to unit death: ", dying_unit])
+	if dying_unit in units_in_game:
+		debug_print('unit_death', ["World deleting: ", dying_unit])
+		var unit_id = dying_unit.get_instance_id()
+		var player_id = units_in_game[dying_unit]
+		players_in_game[player_id].deregister_dead_unit(dying_unit)
+		units_in_game.erase(dying_unit)
+
+		dying_unit.queue_free()
+		#yield(get_tree(), "idle_frame") # Wait a frame
+		emit_signal("unit_deleted", unit_id)
 
